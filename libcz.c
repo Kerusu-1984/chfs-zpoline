@@ -228,9 +228,9 @@ static long hook_function(long a1, long a2, long a3,
 int __hook_init(long placeholder __attribute__((unused)),
 		void *sys_call_hook_ptr)
 {
-    chfs_init(NULL);
     next_sys_call = *((syscall_fn_t *) sys_call_hook_ptr);
 	*((syscall_fn_t *) sys_call_hook_ptr) = hook_function;
+    chfs_init(NULL);
 	return 0;
 }
 
