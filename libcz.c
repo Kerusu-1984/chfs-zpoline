@@ -12,6 +12,11 @@ typedef long (*syscall_fn_t)(long, long, long, long, long, long, long);
 
 static syscall_fn_t next_sys_call = NULL;
 
+#define CHFS_DIR	"/chfs/"
+#define CHFS_LEN	6
+#define IS_CHFS(p)	(strncmp(p, CHFS_DIR, CHFS_LEN) == 0)
+#define SKIP_DIR(p)	(p += CHFS_LEN)
+
 static long hook_open(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -19,8 +24,9 @@ static long hook_open(long a1, long a2, long a3,
     char *path = (char *)a2;
     int flags = (int)a3;
     mode_t mode = (mode_t)a4;
-    if (strncmp(path, "/chfs/", 6) == 0) {
+    if (IS_CHFS(path)) {
         int ret;
+	SKIP_DIR(path);
         if (flags & O_CREAT) {
             ret = chfs_create(path, flags, mode);
         } else {
@@ -79,7 +85,8 @@ static long hook_stat(long a1, long a2, long a3,
 {
     char *path = (char *)a2;
     struct stat *st = (struct stat *)a3;
-    if (strncmp(path, "/chfs/", 6) == 0) {
+    if (IS_CHFS(path)) {
+	SKIP_DIR(path);
         return chfs_stat(path, st);
     } else {
         return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
@@ -123,8 +130,9 @@ static long hook_openat(long a1, long a2, long a3,
     char *path = (char *)a3;
     int flags = (int)a4;
     mode_t mode = (mode_t)a5;
-    if (strncmp(path, "/chfs/", 6) == 0) {
+    if (IS_CHFS(path)) {
         int ret;
+	SKIP_DIR(path);
         if (flags & O_CREAT) {
             ret = chfs_create(path, flags, mode);
         } else {
@@ -170,7 +178,8 @@ static long hook_lstat(long a1, long a2, long a3,
 {
     char *path = (char *)a2;
     struct stat *st = (struct stat *)a3;
-    if (strncmp(path, "/chfs/", 6) == 0) {
+    if (IS_CHFS(path)) {
+	SKIP_DIR(path);
         return chfs_stat(path, st);
     } else {
         return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
@@ -183,7 +192,8 @@ static long hook_newfstatat(long a1, long a2, long a3,
 {
     char *path = (char *)a3;
     struct stat *buf = (struct stat *)a4;
-    if (strncmp(path, "/chfs/", 6) == 0) {
+    if (IS_CHFS(path)) {
+	SKIP_DIR(path);
         return chfs_stat(path, buf);
     } else {
         return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
@@ -228,14 +238,14 @@ static long hook_function(long a1, long a2, long a3,
 int __hook_init(long placeholder __attribute__((unused)),
 		void *sys_call_hook_ptr)
 {
-    next_sys_call = *((syscall_fn_t *) sys_call_hook_ptr);
-	*((syscall_fn_t *) sys_call_hook_ptr) = hook_function;
     chfs_init(NULL);
-	return 0;
+    next_sys_call = *((syscall_fn_t *) sys_call_hook_ptr);
+    *((syscall_fn_t *) sys_call_hook_ptr) = hook_function;
+    return (0);
 }
 
 void __hook_cleanup(void) __attribute__((destructor));
 
 void __hook_cleanup(void) {
-	chfs_term();
+    chfs_term();
 }
