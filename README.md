@@ -5,17 +5,12 @@
 - CHFS
 - binutils(zpoline uses libopcodes)
 ## Build
-1. build libzpoline
-    ```
-    cd zpoline
-    make
-    ```
-2. build libcz
+
    ```
-   cd ..
    autoreconf --install
-   ./configure
+   ./configure  --prefix=[PREFIX]
    make
+   make install
    ```
 
 ## Setup
