@@ -5,6 +5,10 @@
 - CHFS
 - binutils(zpoline uses libopcodes)
 ## Build
+   CHFSを手動で入れたなら、pkg-configにCHFSの場所を教えてやる必要がある
+   ```
+   export PKG_CONFIG_PATH=[CHFSをインストールしたディレクトリ]/lib/pkgconfig:$PKG_CONFIG_PATH
+   ```
 
    ```
    autoreconf --install
