@@ -132,7 +132,7 @@ static long hook_access(long a1, long a2, long a3, long a4, long a5, long a6,
 	SKIP_DIR(path);
 	return (chfs_access(path, mode));
     } else {
-        return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+        return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
     }
 }
 
@@ -144,7 +144,7 @@ static long hook_unlink(long a1, long a2, long a3, long a4, long a5, long a6,
 	SKIP_DIR(path);
 	return (chfs_unlink(path));
     } else {
-        return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+        return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
     }
 }
 
