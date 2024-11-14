@@ -123,6 +123,31 @@ static long hook_pwrite64(long a1, long a2, long a3,
     }
 }
 
+static long hook_access(long a1, long a2, long a3, long a4, long a5, long a6,
+	long a7)
+{
+    char *path = (char *)a2;
+    int mode = (int)a3;
+    if (IS_CHFS(path)) {
+	SKIP_DIR(path);
+	return (chfs_access(path, mode));
+    } else {
+        return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+    }
+}
+
+static long hook_unlink(long a1, long a2, long a3, long a4, long a5, long a6,
+	long a7)
+{
+    char *path = (char *)a2;
+    if (IS_CHFS(path)) {
+	SKIP_DIR(path);
+	return (chfs_unlink(path));
+    } else {
+        return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+    }
+}
+
 static long hook_openat(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -223,6 +248,10 @@ static long hook_function(long a1, long a2, long a3,
             return hook_pread64(a1, a2, a3, a4, a5, a6, a7);
         case SYS_pwrite64:
             return hook_pwrite64(a1, a2, a3, a4, a5, a6, a7);
+        case SYS_access:
+            return hook_access(a1, a2, a3, a4, a5, a6, a7);
+        case SYS_unlink:
+            return hook_unlink(a1, a2, a3, a4, a5, a6, a7);
         case SYS_openat:
             return hook_openat(a1, a2, a3, a4, a5, a6, a7);
         case SYS_fsync:
