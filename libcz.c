@@ -197,6 +197,19 @@ static long hook_fsync(long a1, long a2, long a3,
     }
 }
 
+static long hook_fstat(long a1, long a2, long a3,
+			  long a4, long a5, long a6,
+			  long a7)
+{
+    int fd = (int)a2;
+    struct stat *st = (struct stat *)a3;
+    if (fd & HOOK_FD_FLAG) {
+        return chfs_fstat(fd, st);
+    } else {
+        return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+    }
+}
+
 static long hook_lstat(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -240,6 +253,8 @@ static long hook_function(long a1, long a2, long a3,
             return hook_close(a1, a2, a3, a4, a5, a6, a7);
         case SYS_stat:
             return hook_stat(a1, a2, a3, a4, a5, a6, a7);
+        case SYS_fstat:
+            return hook_fstat(a1, a2, a3, a4, a5, a6, a7);
         case SYS_lstat:
             return hook_lstat(a1, a2, a3, a4, a5, a6, a7);
         case SYS_lseek:
