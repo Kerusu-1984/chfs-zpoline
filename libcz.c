@@ -3,14 +3,29 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/syscall.h>
-#include <chfs.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <chfs.h>
+
+#ifdef DEBUG
+#define _DEBUG(x)	x
+#else
+#define _DEBUG(x)
+#endif
 
 #define HOOK_FD_FLAG (1<<30)
 
 typedef long (*syscall_fn_t)(long, long, long, long, long, long, long);
 
-static syscall_fn_t next_sys_call = NULL;
+static syscall_fn_t real_next_sys_call = NULL;
+
+static long next_sys_call(long a1, long a2, long a3, long a4, long a5,
+	long a6, long a7)
+{
+	_DEBUG(printf("syscall(%ld, %ld, %ld, %ld, %ld, %ld, %ld)\n",
+		a1, a2, a3, a4, a5, a6, a7));
+	return (real_next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
 
 #define CHFS_DIR	"/chfs/"
 #define CHFS_LEN	6
@@ -242,6 +257,9 @@ static long hook_function(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
 {
+    _DEBUG(printf("hook_syscall(%ld, %ld, %ld, %ld, %ld, %ld, %ld)\n",
+		a1, a2, a3, a4, a5, a6, a7));
+
     switch (a1) {
         case SYS_read:
             return hook_read(a1, a2, a3, a4, a5, a6, a7);
@@ -283,7 +301,7 @@ int __hook_init(long placeholder __attribute__((unused)),
 		void *sys_call_hook_ptr)
 {
     chfs_init(NULL);
-    next_sys_call = *((syscall_fn_t *) sys_call_hook_ptr);
+    real_next_sys_call = *((syscall_fn_t *) sys_call_hook_ptr);
     *((syscall_fn_t *) sys_call_hook_ptr) = hook_function;
     return (0);
 }
