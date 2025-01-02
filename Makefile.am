@@ -5,7 +5,7 @@ CLEANFILES = $(top_srcdir)/syscall_string.c
 libcz_la_LDFLAGS = -shared -fPIC -pthread @CHFS_LIBS@
 libcz_la_CPPFLAGS = -g -Wall -pthread @CHFS_CFLAGS@
 
-syscall_string.c: $(top_srcdir)/syscall_string.sh /usr/include/x86_64-linux-gnu/asm/unistd_64.h
+$(top_srcdir)/syscall_string.c: $(top_srcdir)/syscall_string.sh /usr/include/x86_64-linux-gnu/asm/unistd_64.h
 	sh $(top_srcdir)/syscall_string.sh > $(top_srcdir)/syscall_string.c
 
 install-exec-hook:
