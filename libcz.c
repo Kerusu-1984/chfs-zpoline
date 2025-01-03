@@ -204,7 +204,7 @@ static long hook_fstat(long a1, long a2, long a3,
     int fd = (int)a2;
     struct stat *st = (struct stat *)a3;
     if (fd & HOOK_FD_FLAG) {
-        return chfs_fstat(fd, st);
+        return chfs_fstat(fd ^ HOOK_FD_FLAG, st);
     } else {
         return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
     }
