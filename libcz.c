@@ -5,6 +5,7 @@
 #include <sys/syscall.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <chfs.h>
 
 const char *syscall_string(int);
@@ -24,9 +25,16 @@ static syscall_fn_t real_next_sys_call = NULL;
 static long next_sys_call(long a1, long a2, long a3, long a4, long a5,
 	long a6, long a7)
 {
-	_DEBUG(printf("call: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n",
-		syscall_string(a1), a2, a3, a4, a5, a6, a7));
-	return (real_next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+	long ret;
+	int save_errno;
+
+	ret = real_next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+	save_errno = errno;
+	_DEBUG(printf("call: %s(%ld, %ld, %ld, %ld, %ld, %ld) = %ld %s\n",
+		syscall_string(a1), a2, a3, a4, a5, a6, a7, ret,
+		ret == -1 ? strerror(errno) : ""));
+	errno = save_errno;
+	return (ret);
 }
 
 #define CHFS_DIR	"/chfs/"
