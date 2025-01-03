@@ -24,7 +24,7 @@ static syscall_fn_t real_next_sys_call = NULL;
 static long next_sys_call(long a1, long a2, long a3, long a4, long a5,
 	long a6, long a7)
 {
-	_DEBUG(printf("syscall(%s, %ld, %ld, %ld, %ld, %ld, %ld)\n",
+	_DEBUG(printf("call: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n",
 		syscall_string(a1), a2, a3, a4, a5, a6, a7));
 	return (real_next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
@@ -259,7 +259,7 @@ static long hook_function(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
 {
-    _DEBUG(printf("hook_syscall(%s, %ld, %ld, %ld, %ld, %ld, %ld)\n",
+    _DEBUG(printf("hook: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n",
 		syscall_string(a1), a2, a3, a4, a5, a6, a7));
 
     switch (a1) {
