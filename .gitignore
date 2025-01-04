@@ -20,3 +20,4 @@ build
 .libs
 autom4te.cache
 m4
+syscall_string.c
