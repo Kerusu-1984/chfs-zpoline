@@ -249,6 +249,20 @@ static long hook_lstat(long a1, long a2, long a3,
     }
 }
 
+static long hook_mkdir(long a1, long a2, long a3,
+			  long a4, long a5, long a6,
+			  long a7)
+{
+    char *path = (char *)a2;
+    mode_t mode = (mode_t)a3;
+    if (IS_CHFS(path)) {
+	    SKIP_DIR(path);
+        return chfs_mkdir(path, mode);
+    } else {
+        return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+    }
+}
+
 static long hook_newfstatat(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -299,6 +313,8 @@ static long hook_function(long a1, long a2, long a3,
             return hook_openat(a1, a2, a3, a4, a5, a6, a7);
         case SYS_fsync:
             return hook_fsync(a1, a2, a3, a4, a5, a6, a7);
+        case SYS_mkdir:
+            return hook_mkdir(a1, a2, a3, a4, a5, a6, a7);
         case SYS_newfstatat:
             return hook_newfstatat(a1, a2, a3, a4, a5, a6, a7);
         default:
