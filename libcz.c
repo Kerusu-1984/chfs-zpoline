@@ -278,14 +278,18 @@ static long hook_newfstatat(long a1, long a2, long a3,
     }
 }
 
+static int clone_called = 0;
+static long clone_pid;
+
 static long
 hook_clone(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
-	long r = next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+	clone_pid = next_sys_call(a1, a2, a3, a4, a5, a6, a7);
 
-	if (r == 0)
+	++clone_called;
+	if (clone_pid == 0)
 		chfs_init_margo();
-	return (r);
+	return (clone_pid);
 }
 
 static long hook_function(long a1, long a2, long a3,
@@ -349,5 +353,6 @@ void __hook_cleanup(void) __attribute__((destructor));
 
 void __hook_cleanup(void) {
     /* XXX - workaround: margo_finalize() does not terminate after fork */
-    /* chfs_term(); */
+    if (clone_called == 0 || (clone_called == 1 && clone_pid))
+	chfs_term();
 }
