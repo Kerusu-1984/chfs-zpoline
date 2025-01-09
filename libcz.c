@@ -278,6 +278,16 @@ static long hook_newfstatat(long a1, long a2, long a3,
     }
 }
 
+static long
+hook_clone(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	long r = next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+
+	if (r == 0)
+		chfs_init_margo();
+	return (r);
+}
+
 static long hook_function(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -308,6 +318,8 @@ static long hook_function(long a1, long a2, long a3,
             return hook_pwrite64(a1, a2, a3, a4, a5, a6, a7);
         case SYS_access:
             return hook_access(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_clone:
+	    return hook_clone(a1, a2, a3, a4, a5, a6, a7);
         case SYS_unlink:
             return hook_unlink(a1, a2, a3, a4, a5, a6, a7);
         case SYS_openat:
@@ -336,5 +348,6 @@ int __hook_init(long placeholder __attribute__((unused)),
 void __hook_cleanup(void) __attribute__((destructor));
 
 void __hook_cleanup(void) {
-    chfs_term();
+    /* XXX - workaround: margo_finalize() does not terminate after fork */
+    /* chfs_term(); */
 }
