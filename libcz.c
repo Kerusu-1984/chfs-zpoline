@@ -38,9 +38,10 @@ static long next_sys_call(long a1, long a2, long a3, long a4, long a5,
 	return (ret);
 }
 
-#define CHFS_DIR	"/chfs/"
-#define CHFS_LEN	6
-#define IS_CHFS(p)	(strncmp(p, CHFS_DIR, CHFS_LEN) == 0)
+#define CHFS_DIR	"/chfs"
+#define CHFS_LEN	5
+#define IS_CHFS(p)	(strncmp(p, CHFS_DIR, CHFS_LEN) == 0 && \
+				(p[CHFS_LEN] == '\0' || p[CHFS_LEN] == '/'))
 #define SKIP_DIR(p)	(p += CHFS_LEN)
 
 /* file descriptors opened by dup2 */
