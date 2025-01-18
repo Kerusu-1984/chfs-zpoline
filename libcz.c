@@ -475,4 +475,5 @@ void __hook_cleanup(void) __attribute__((destructor));
 
 void __hook_cleanup(void) {
     chfs_term();
+    free(fd_list);
 }
