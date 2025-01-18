@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -337,6 +338,19 @@ static long hook_lstat(long a1, long a2, long a3,
     }
 }
 
+static long
+hook_getdents64(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	int fd = a2;
+	char *dirp = (char *)a3;
+	ssize_t count = a4;
+
+	if (is_chfs_fd(&fd))
+		return (chfs_linux_getdents64(fd, dirp, count));
+	else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
 static long hook_newfstatat(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -349,6 +363,37 @@ static long hook_newfstatat(long a1, long a2, long a3,
     } else {
         return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
     }
+}
+
+static long
+hook_statx(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *path = (char *)a3;
+	struct statx *sx = (struct statx *)a6;
+	struct stat sb;
+
+	if (IS_CHFS(path)) {
+		int ret;
+
+		SKIP_DIR(path);
+		ret = chfs_stat(path, &sb);
+		if (ret < 0)
+			return (ret);
+		sx->stx_blksize = sb.st_blksize;
+		sx->stx_nlink = sb.st_nlink;
+		sx->stx_uid = sb.st_uid;
+		sx->stx_gid = sb.st_gid;
+		sx->stx_mode = sb.st_mode;
+		sx->stx_ino = sb.st_ino;
+		sx->stx_size = sb.st_size;
+		sx->stx_blocks = sb.st_blocks;
+		sx->stx_mtime.tv_sec = sb.st_mtim.tv_sec;
+		sx->stx_mtime.tv_nsec = sb.st_mtim.tv_nsec;
+		sx->stx_ctime.tv_sec = sb.st_ctim.tv_sec;
+		sx->stx_ctime.tv_nsec = sb.st_ctim.tv_nsec;
+		return (ret);
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
 
 static long hook_function(long a1, long a2, long a3,
@@ -389,8 +434,12 @@ static long hook_function(long a1, long a2, long a3,
             return hook_openat(a1, a2, a3, a4, a5, a6, a7);
         case SYS_fsync:
             return hook_fsync(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_getdents64:
+	    return hook_getdents64(a1, a2, a3, a4, a5, a6, a7);
         case SYS_newfstatat:
             return hook_newfstatat(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_statx:
+	    return hook_statx(a1, a2, a3, a4, a5, a6, a7);
         default:
             break;
     }
