@@ -354,6 +354,30 @@ static long hook_mkdir(long a1, long a2, long a3,
 }
 
 static long
+hook_lgetxattr(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *path = (char *)a2;
+
+	if (IS_CHFS(path)) {
+		SKIP_DIR(path);
+		return (0);
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
+static long
+hook_listxattr(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *path = (char *)a2;
+
+	if (IS_CHFS(path)) {
+		SKIP_DIR(path);
+		return (0);
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
+static long
 hook_getdents64(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
 	int fd = a2;
@@ -451,6 +475,10 @@ static long hook_function(long a1, long a2, long a3,
             return hook_fsync(a1, a2, a3, a4, a5, a6, a7);
         case SYS_mkdir:
             return hook_mkdir(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_lgetxattr:
+	    return hook_lgetxattr(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_listxattr:
+	    return hook_listxattr(a1, a2, a3, a4, a5, a6, a7);
 	case SYS_getdents64:
 	    return hook_getdents64(a1, a2, a3, a4, a5, a6, a7);
         case SYS_newfstatat:
