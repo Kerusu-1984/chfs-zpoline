@@ -394,11 +394,15 @@ static long hook_newfstatat(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
 {
+	int fd = (int)a2;
     char *path = (char *)a3;
     struct stat *buf = (struct stat *)a4;
+	int flags = (int)a5;
     if (IS_CHFS(path)) {
 	SKIP_DIR(path);
         return chfs_stat(path, buf);
+	} else if (is_chfs_fd(&fd) && (flags & AT_EMPTY_PATH)) {
+		return chfs_fstat(fd, buf);
     } else {
         return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
     }
