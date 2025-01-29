@@ -39,6 +39,7 @@ static long next_sys_call(long a1, long a2, long a3, long a4, long a5,
 	_DEBUG(printf("call[%d]: %s(%ld, %ld, %ld, %ld, %ld, %ld) = %ld %s\n",
 		getpid(), syscall_string(a1), a2, a3, a4, a5, a6, a7, ret,
 		ret == -1 ? strerror(errno) : ""));
+	_DEBUG(fflush(stdout));
 	_ASSERT(strcmp(syscall_string(a1), "unknown"));
 	errno = save_errno;
 	return (ret);
@@ -466,6 +467,7 @@ static long hook_function(long a1, long a2, long a3,
 {
     _DEBUG(printf("hook[%d]: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n", getpid(),
 		syscall_string(a1), a2, a3, a4, a5, a6, a7));
+    _DEBUG(fflush(stdout));
 
     switch (a1) {
         case SYS_read:
