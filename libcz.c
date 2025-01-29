@@ -530,8 +530,11 @@ int __hook_init(long placeholder __attribute__((unused)),
 void __hook_cleanup(void) __attribute__((destructor));
 
 void __hook_cleanup(void) {
+    /* XXX - after clone, there are several cases */
+#if 0
     /* XXX - workaround: margo_finalize() does not terminate after fork */
     if (clone_called == 0 || (clone_called == 1 && clone_pid))
 	chfs_term();
     free(fd_list);
+#endif
 }
