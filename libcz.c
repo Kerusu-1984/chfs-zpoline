@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -13,8 +14,12 @@ const char *syscall_string(int);
 
 #ifdef DEBUG
 #define _DEBUG(x)	x
+#define _ASSERT(x)	do { if ((x) == 0) fprintf(stderr, \
+		"%s:%d: %s: Assertion '%s' failed.\n", \
+		__FILE__, __LINE__, __func__, #x), exit(1); } while (0);
 #else
 #define _DEBUG(x)
+#define _ASSERT(x)
 #endif
 
 #define HOOK_FD_FLAG (1<<30)
@@ -31,16 +36,19 @@ static long next_sys_call(long a1, long a2, long a3, long a4, long a5,
 
 	ret = real_next_sys_call(a1, a2, a3, a4, a5, a6, a7);
 	save_errno = errno;
-	_DEBUG(printf("call: %s(%ld, %ld, %ld, %ld, %ld, %ld) = %ld %s\n",
-		syscall_string(a1), a2, a3, a4, a5, a6, a7, ret,
+	_DEBUG(printf("call[%d]: %s(%ld, %ld, %ld, %ld, %ld, %ld) = %ld %s\n",
+		getpid(), syscall_string(a1), a2, a3, a4, a5, a6, a7, ret,
 		ret == -1 ? strerror(errno) : ""));
+	_DEBUG(fflush(stdout));
+	_ASSERT(strcmp(syscall_string(a1), "unknown"));
 	errno = save_errno;
 	return (ret);
 }
 
 #define CHFS_DIR	"/chfs"
 #define CHFS_LEN	5
-#define IS_CHFS(p)	(strncmp(p, CHFS_DIR, CHFS_LEN) == 0 && \
+#define IS_CHFS(p)	(printf("path[%d]=%s\n", getpid(), p), \
+				strncmp(p, CHFS_DIR, CHFS_LEN) == 0 && \
 				(p[CHFS_LEN] == '\0' || p[CHFS_LEN] == '/'))
 #define SKIP_DIR(p)	(p += CHFS_LEN)
 
@@ -457,8 +465,9 @@ static long hook_function(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
 {
-    _DEBUG(printf("hook: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n",
+    _DEBUG(printf("hook[%d]: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n", getpid(),
 		syscall_string(a1), a2, a3, a4, a5, a6, a7));
+    _DEBUG(fflush(stdout));
 
     switch (a1) {
         case SYS_read:
@@ -523,8 +532,11 @@ int __hook_init(long placeholder __attribute__((unused)),
 void __hook_cleanup(void) __attribute__((destructor));
 
 void __hook_cleanup(void) {
+    /* XXX - after clone, there are several cases */
+#if 0
     /* XXX - workaround: margo_finalize() does not terminate after fork */
     if (clone_called == 0 || (clone_called == 1 && clone_pid))
 	chfs_term();
     free(fd_list);
+#endif
 }
