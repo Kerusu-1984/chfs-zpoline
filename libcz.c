@@ -276,6 +276,33 @@ static long hook_unlink(long a1, long a2, long a3, long a4, long a5, long a6,
     }
 }
 
+static long
+hook_symlink(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *target = (char *)a2;
+	char *linkpath = (char *)a3;
+
+	if (IS_CHFS(target)) {
+		SKIP_DIR(target);
+		return (chfs_symlink(target, linkpath));
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
+static long
+hook_readlink(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *path = (char *)a2;
+	char *buf = (char *)a3;
+	size_t bufsize = (size_t)a4;
+
+	if (IS_CHFS(path)) {
+		SKIP_DIR(path);
+		return (chfs_readlink(path, buf, bufsize));
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
 static long hook_openat(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -325,6 +352,31 @@ static long hook_fsync(long a1, long a2, long a3,
     }
 }
 
+static long
+hook_truncate(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *path = (char *)a2;
+	off_t length = (off_t)a3;
+
+	if (IS_CHFS(path)) {
+		SKIP_DIR(path);
+		return (chfs_truncate(path, length));
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
+static long
+hook_ftruncate(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	int fd = (int)a2;
+	off_t length = (off_t)a3;
+
+	if (is_chfs_fd(&fd))
+		return (chfs_ftruncate(fd, length));
+	else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
 static long hook_fstat(long a1, long a2, long a3,
 			  long a4, long a5, long a6,
 			  long a7)
@@ -352,22 +404,51 @@ static long hook_lstat(long a1, long a2, long a3,
     }
 }
 
-static long hook_mkdir(long a1, long a2, long a3,
-			  long a4, long a5, long a6,
-			  long a7)
+static long
+hook_mkdir(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
-    char *path = (char *)a2;
-    mode_t mode = (mode_t)a3;
-    if (IS_CHFS(path)) {
-	    SKIP_DIR(path);
-        return chfs_mkdir(path, mode);
-    } else {
-        return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
-    }
+	char *path = (char *)a2;
+	mode_t mode = (mode_t)a3;
+
+	if (IS_CHFS(path)) {
+		SKIP_DIR(path);
+		return (chfs_mkdir(path, mode));
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
 
 static long
-hook_lgetxattr(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+hook_rmdir(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *path = (char *)a2;
+
+	if (IS_CHFS(path)) {
+		SKIP_DIR(path);
+		return (chfs_rmdir(path));
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
+static long
+hook_creat(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+{
+	char *path = (char *)a2;
+	mode_t mode = (mode_t)a3;
+
+	if (IS_CHFS(path)) {
+		int ret;
+
+		SKIP_DIR(path);
+		ret = chfs_create(path, O_CREAT|O_WRONLY|O_TRUNC, mode);
+		if (ret < 0)
+			return (ret);
+		return (ret | HOOK_FD_FLAG);
+	} else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
+}
+
+static long
+hook_nop_path(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
 	char *path = (char *)a2;
 
@@ -379,14 +460,13 @@ hook_lgetxattr(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 }
 
 static long
-hook_listxattr(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
+hook_nop_fd(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
-	char *path = (char *)a2;
+	int fd = (int)a2;
 
-	if (IS_CHFS(path)) {
-		SKIP_DIR(path);
+	if (is_chfs_fd(&fd))
 		return (0);
-	} else
+	else
 		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
 
@@ -403,22 +483,21 @@ hook_getdents64(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
 
-static long hook_newfstatat(long a1, long a2, long a3,
-			  long a4, long a5, long a6,
-			  long a7)
+static long
+hook_newfstatat(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
 	int fd = (int)a2;
-    char *path = (char *)a3;
-    struct stat *buf = (struct stat *)a4;
+	char *path = (char *)a3;
+	struct stat *buf = (struct stat *)a4;
 	int flags = (int)a5;
-    if (IS_CHFS(path)) {
-	SKIP_DIR(path);
-        return chfs_stat(path, buf);
-	} else if (is_chfs_fd(&fd) && (flags & AT_EMPTY_PATH)) {
-		return chfs_fstat(fd, buf);
-    } else {
-        return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
-    }
+
+	if (IS_CHFS(path)) {
+		SKIP_DIR(path);
+		return (chfs_stat(path, buf));
+	} else if (is_chfs_fd(&fd) && (flags & AT_EMPTY_PATH))
+		return (chfs_fstat(fd, buf));
+	else
+		return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
 
 static int clone_called = 0;
@@ -501,20 +580,53 @@ static long hook_function(long a1, long a2, long a3,
 	    return hook_dup2(a1, a2, a3, a4, a5, a6, a7);
 	case SYS_clone:
 	    return hook_clone(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_fsync:
+	case SYS_fdatasync:
+	    return hook_fsync(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_truncate:
+	    return hook_truncate(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_ftruncate:
+	    return hook_ftruncate(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_mkdir:
+	    return hook_mkdir(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_rmdir:
+	    return hook_rmdir(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_creat:
+	    return hook_creat(a1, a2, a3, a4, a5, a6, a7);
         case SYS_unlink:
             return hook_unlink(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_openat:
-            return hook_openat(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_fsync:
-            return hook_fsync(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_mkdir:
-            return hook_mkdir(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_symlink:
+	    return hook_symlink(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_readlink:
+	    return hook_readlink(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_chmod:
+	case SYS_chown:
+	case SYS_lchown:
+	case SYS_utime:
+	    return hook_nop_path(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_fchmod:
+	case SYS_fchown:
+	    return hook_nop_fd(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_setxattr:
+	case SYS_lsetxattr:
+	case SYS_getxattr:
 	case SYS_lgetxattr:
-	    return hook_lgetxattr(a1, a2, a3, a4, a5, a6, a7);
 	case SYS_listxattr:
-	    return hook_listxattr(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_llistxattr:
+	case SYS_removexattr:
+	case SYS_lremovexattr:
+	    return hook_nop_path(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_fsetxattr:
+	case SYS_fgetxattr:
+	case SYS_flistxattr:
+	case SYS_fremovexattr:
+	    return hook_nop_fd(a1, a2, a3, a4, a5, a6, a7);
 	case SYS_getdents64:
 	    return hook_getdents64(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_utimes:
+	    return hook_nop_path(a1, a2, a3, a4, a5, a6, a7);
+	case SYS_openat:
+	    return hook_openat(a1, a2, a3, a4, a5, a6, a7);
         case SYS_newfstatat:
             return hook_newfstatat(a1, a2, a3, a4, a5, a6, a7);
 	case SYS_statx:
