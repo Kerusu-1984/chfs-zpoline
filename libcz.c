@@ -796,10 +796,8 @@ hook_newfstatat(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 		if (path == NULL && (flags & AT_EMPTY_PATH)) {
 			if (fd == AT_FDCWD && is_cwd_chfs) {
 				p = chfs_path_at(AT_FDCWD, "");
-				if (p == NULL) {
-					errno = ENOMEM;
+				if (p == NULL)
 					return (-1);
-				}
 				ret = chfs_stat(p, buf);
 				free(p);
 				return (ret);
@@ -807,10 +805,8 @@ hook_newfstatat(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 			return (chfs_fstat(fd, buf));
 		}
 		p = chfs_path_at(fd, path);
-		if (p == NULL) {
-			errno = ENOMEM;
+		if (p == NULL)
 			return (-1);
-		}
 		ret = chfs_stat(p, buf);
 		free(p);
 		return (ret);
@@ -832,31 +828,70 @@ hook_clone(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 	return (clone_pid);
 }
 
+static void
+hook_copy_statx(struct statx *sx, struct stat *sb)
+{
+	sx->stx_blksize = sb->st_blksize;
+	sx->stx_nlink = sb->st_nlink;
+	sx->stx_uid = sb->st_uid;
+	sx->stx_gid = sb->st_gid;
+	sx->stx_mode = sb->st_mode;
+	sx->stx_ino = sb->st_ino;
+	sx->stx_size = sb->st_size;
+	sx->stx_blocks = sb->st_blocks;
+	sx->stx_mtime.tv_sec = sb->st_mtim.tv_sec;
+	sx->stx_mtime.tv_nsec = sb->st_mtim.tv_nsec;
+	sx->stx_ctime.tv_sec = sb->st_ctim.tv_sec;
+	sx->stx_ctime.tv_nsec = sb->st_ctim.tv_nsec;
+}
+
+static long
+hook_statx_internal(const char *path, struct statx *sx)
+{
+	struct stat sb;
+	int ret;
+
+	ret = chfs_stat(path, &sb);
+	if (ret < 0)
+		return (ret);
+	hook_copy_statx(sx, &sb);
+	return (ret);
+}
+
 static long
 hook_statx(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
-	char *path = (char *)a3;
+	int fd = (int)a2;
+	char *path = (char *)a3, *p;
+	int flags = (int)a4;
 	struct statx *sx = (struct statx *)a6;
 	struct stat sb;
 	int ret;
 
 	if (IS_CHFS(path)) {
 		SKIP_DIR(path);
-		ret = chfs_stat(path, &sb);
-		if (ret < 0)
+		return (hook_statx_internal(path, sx));
+	} else if ((fd == AT_FDCWD && is_cwd_chfs) || is_chfs_fd(&fd)) {
+		if (path == NULL && (flags & AT_EMPTY_PATH)) {
+			if (fd == AT_FDCWD && is_cwd_chfs) {
+				p = chfs_path_at(AT_FDCWD, "");
+				if (p == NULL)
+					return (-1);
+				ret = hook_statx_internal(p, sx);
+				free(p);
+				return (ret);
+			}
+			ret = chfs_fstat(fd, &sb);
+			if (ret < 0)
+				return (ret);
+			hook_copy_statx(sx, &sb);
 			return (ret);
-		sx->stx_blksize = sb.st_blksize;
-		sx->stx_nlink = sb.st_nlink;
-		sx->stx_uid = sb.st_uid;
-		sx->stx_gid = sb.st_gid;
-		sx->stx_mode = sb.st_mode;
-		sx->stx_ino = sb.st_ino;
-		sx->stx_size = sb.st_size;
-		sx->stx_blocks = sb.st_blocks;
-		sx->stx_mtime.tv_sec = sb.st_mtim.tv_sec;
-		sx->stx_mtime.tv_nsec = sb.st_mtim.tv_nsec;
-		sx->stx_ctime.tv_sec = sb.st_ctim.tv_sec;
-		sx->stx_ctime.tv_nsec = sb.st_ctim.tv_nsec;
+		}
+		p = chfs_path_at(fd, path);
+		if (p == NULL)
+			return (-1);
+		ret = hook_statx_internal(p, sx);
+		free(p);
 		return (ret);
 	}
 	return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
