@@ -862,109 +862,108 @@ hook_statx(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 	return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
 
-static long hook_function(long a1, long a2, long a3,
-			  long a4, long a5, long a6,
-			  long a7)
+static long
+hook_function(long a1, long a2, long a3, long a4, long a5, long a6, long a7)
 {
-    _DEBUG(printf("hook[%d]: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n", getpid(),
-		syscall_string(a1), a2, a3, a4, a5, a6, a7));
-    _DEBUG(fflush(stdout));
+	_DEBUG(printf("hook[%d]: %s(%ld, %ld, %ld, %ld, %ld, %ld)\n",
+		getpid(), syscall_string(a1), a2, a3, a4, a5, a6, a7));
+	_DEBUG(fflush(stdout));
 
-    switch (a1) {
-        case SYS_read:
-            return hook_read(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_write:
-            return hook_write(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_open:
-            return hook_open(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_close:
-            return hook_close(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_stat:
-            return hook_stat(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_fstat:
-            return hook_fstat(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_lstat:
-            return hook_lstat(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_lseek:
-            return hook_lseek(a1, a2, a3, a4, a5, a6, a7);
+	switch (a1) {
+	case SYS_read:
+		return (hook_read(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_write:
+		return (hook_write(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_open:
+		return (hook_open(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_close:
+		return (hook_close(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_stat:
+		return (hook_stat(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_fstat:
+		return (hook_fstat(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_lstat:
+		return (hook_lstat(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_lseek:
+		return (hook_lseek(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_ioctl:
-	    return hook_nop_fd(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_pread64:
-            return hook_pread64(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_pwrite64:
-            return hook_pwrite64(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_fd(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_pread64:
+		return (hook_pread64(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_pwrite64:
+		return (hook_pwrite64(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_readv:
 	case SYS_writev:
-	    return hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_access:
-            return hook_access(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_access:
+		return (hook_access(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_dup:
-	    return hook_dup(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_dup(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_sendfile:
-	    return hook_notsupp_fd2(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_fd2(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_dup2:
 	case SYS_dup3:
-	    return hook_dup2(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_dup2(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_clone:
 	case SYS_fork:
 	case SYS_vfork:
 	case SYS_clone3:
-	    return hook_clone(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_clone(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fcntl:
-	    return hook_fcntl(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_fcntl(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_flock:
-	    return hook_nop_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fsync:
 	case SYS_fdatasync:
-	    return hook_fsync(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_fsync(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_truncate:
-	    return hook_truncate(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_truncate(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_ftruncate:
-	    return hook_ftruncate(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_ftruncate(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_getdents:
-	    return hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_getcwd:
-	    return hook_getcwd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_getcwd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_chdir:
-	    return hook_chdir(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_chdir(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fchdir:
-	    return hook_fchdir(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_fchdir(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_rename:
-	    return hook_notsupp_path2(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_path2(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_mkdir:
-	    return hook_mkdir(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_mkdir(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_rmdir:
-	    return hook_rmdir(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_rmdir(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_creat:
-	    return hook_creat(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_creat(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_link:
-	    return hook_notsupp_path2(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_unlink:
-            return hook_unlink(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_path2(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_unlink:
+		return (hook_unlink(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_symlink:
-	    return hook_symlink(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_symlink(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_readlink:
-	    return hook_readlink(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_readlink(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_chmod:
 	case SYS_chown:
 	case SYS_lchown:
 	case SYS_utime:
-	    return hook_nop_path(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_path(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fchmod:
 	case SYS_fchown:
-	    return hook_nop_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_mknod:
 	case SYS_uselib:
 	case SYS_statfs:
-	    return hook_notsupp_path(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_path(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fstatfs:
-	    return hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_chroot:
 	case SYS_swapon:
 	case SYS_swapoff:
-	    return hook_notsupp_path(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_path(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_readahead:
-	    return hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_setxattr:
 	case SYS_lsetxattr:
 	case SYS_getxattr:
@@ -973,62 +972,65 @@ static long hook_function(long a1, long a2, long a3,
 	case SYS_llistxattr:
 	case SYS_removexattr:
 	case SYS_lremovexattr:
-	    return hook_nop_path(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_path(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fsetxattr:
 	case SYS_fgetxattr:
 	case SYS_flistxattr:
 	case SYS_fremovexattr:
-	    return hook_nop_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_getdents64:
-	    return hook_getdents64(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_getdents64(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fadvise64:
-	    return hook_nop_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_utimes:
-	    return hook_nop_path(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_path(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_inotify_add_watch:
 	case SYS_inotify_rm_watch:
-	    return hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_fd(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_openat:
-	    return hook_openat(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_openat(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_mkdirat:
-	    return hook_mkdirat(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_mkdirat(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_mknodat:
-	    return hook_notsupp_at(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_at(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_fchownat:
 	case SYS_futimesat:
-	    return hook_nop_at(a1, a2, a3, a4, a5, a6, a7);
-        case SYS_newfstatat:
-            return hook_newfstatat(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_nop_at(a1, a2, a3, a4, a5, a6, a7));
+	case SYS_newfstatat:
+		return (hook_newfstatat(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_unlinkat:
-	    return hook_unlinkat(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_unlinkat(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_renameat:
 	case SYS_linkat:
-	    return hook_notsupp_at2(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_notsupp_at2(a1, a2, a3, a4, a5, a6, a7));
 	case SYS_statx:
-	    return hook_statx(a1, a2, a3, a4, a5, a6, a7);
-        default:
-            break;
-    }
-    return next_sys_call(a1, a2, a3, a4, a5, a6, a7);
+		return (hook_statx(a1, a2, a3, a4, a5, a6, a7));
+	default:
+		break;
+	}
+	return (next_sys_call(a1, a2, a3, a4, a5, a6, a7));
 }
 
-int __hook_init(long placeholder __attribute__((unused)),
-		void *sys_call_hook_ptr)
+int
+__hook_init(long placeholder __attribute__((unused)),
+	void *sys_call_hook_ptr)
 {
-    chfs_init(NULL);
-    real_next_sys_call = *((syscall_fn_t *) sys_call_hook_ptr);
-    *((syscall_fn_t *) sys_call_hook_ptr) = hook_function;
-    return (0);
+	chfs_init(NULL);
+	real_next_sys_call = *((syscall_fn_t *) sys_call_hook_ptr);
+	*((syscall_fn_t *) sys_call_hook_ptr) = hook_function;
+	return (0);
 }
 
 void __hook_cleanup(void) __attribute__((destructor));
 
-void __hook_cleanup(void) {
-    /* XXX - after clone, there are several cases */
+void
+__hook_cleanup(void)
+{
+	/* XXX - after clone, there are several cases */
 #if 0
-    /* XXX - workaround: margo_finalize() does not terminate after fork */
-    if (clone_called == 0 || (clone_called == 1 && clone_pid))
-	chfs_term();
-    free(fd_list);
+	/* XXX - workaround: margo_finalize() does not terminate after fork */
+	if (clone_called == 0 || (clone_called == 1 && clone_pid))
+		chfs_term();
+	free(fd_list);
 #endif
 }
